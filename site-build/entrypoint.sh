@@ -10,8 +10,8 @@ OUTPUTDIR=$BASEDIR/output
 
 # Generate site
 mkdir -p output
-java -jar init.jar $INPUTDIR $OUTPUTDIR
-node render.min.js $OUTPUTDIR/layouts $OUTPUTDIR/resources
+java -jar $BASEDIR/init.jar $INPUTDIR $OUTPUTDIR
+node $BASEDIR/render.min.js $OUTPUTDIR/layouts $OUTPUTDIR/resources
 
 # Clean up unneeded layout files
 rm -rf $OUTPUTDIR/layouts

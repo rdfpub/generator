@@ -15,20 +15,19 @@ COPY . /rdfpub
 # Compile and package init process
 FROM maven:3.8.5-eclipse-temurin-17-alpine AS init
 COPY --from=base /rdfpub/init /rdfpub/init
-WORKDIR /rdfpub/init
-RUN mvn clean package
+RUN cd /rdfpub/init \
+ && mvn clean package
 
 # Minify and package rendering process
 FROM node:18.3.0 AS render
 COPY --from=base /rdfpub/render /rdfpub/render
-WORKDIR /rdfpub/render
-RUN npm install \
+RUN cd /rdfpub/render \
+ && npm install \
  && npm run bundle \
  && npm run minify
 
 # Configure site container
 FROM alpine:3.16.0
-WORKDIR /rdfpub
 
 # Add necessary packages
 RUN apk update \
@@ -38,9 +37,9 @@ RUN apk update \
  && apk add brotli
 
 # Copy site generator tools
-COPY --from=base /rdfpub/site-build/Dockerfile /rdfpub/site-build/entrypoint.sh ./
-COPY --from=init /rdfpub/init/target/init.jar .
-COPY --from=render /rdfpub/render/render.min.js .
+COPY --from=base /rdfpub/site-build/Dockerfile /rdfpub/site-build/entrypoint.sh /rdfpub/
+COPY --from=init /rdfpub/init/target/init.jar /rdfpub/
+COPY --from=render /rdfpub/render/render.min.js /rdfpub/
 
 # Run entrypoint script to build the site
-ENTRYPOINT /rdfpub/entrypoint.sh
+ENTRYPOINT ["/rdfpub/entrypoint.sh"]
