@@ -5,10 +5,10 @@ changelog:
   categories:
     - title: New Features
       labels:
-        - new-feature
+        - new feature
     - title: Bug Fixes
       labels:
-        - bug-fix
+        - bug fix
     - title: Documentation Changes
       labels:
         - documentation
