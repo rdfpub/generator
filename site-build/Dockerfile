@@ -2,7 +2,6 @@
 # Dockerfile to build an image for a compiled and rendered rdfpub site
 FROM alpine:3.16.0
 COPY . /rdfpub
-WORKDIR /rdfpub
 
 # Set environment variables
 ENV \
@@ -64,7 +63,6 @@ mv /rdfpub/db/* $RDF4J_HOME/server/repositories/rdfpub/
 rm -rf /rdfpub/db/
 chown -R $RDF4J_USER:$JETTY_USER $RDF4J_HOME
 chmod ug+w -R $RDF4J_HOME
-#chmod a-w $RDF4J_HOME/server/repositories/rdfpub/*
 
 # Install and configure OpenResty
 wget -O- 'https://openresty.org/package/admin@openresty.com-5ea678a6.rsa.pub' > /etc/apk/keys/admin@openresty.com-5ea678a6.rsa.pub
