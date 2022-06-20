@@ -17,10 +17,11 @@ If you're totally new to rdfpub, check out [the rdfpub tutorial site](https://gi
 
 ```sh
 # Generate a Docker image of your site
-docker run ghcr.io/rdfpub/generator            \
+docker run                                     \
   -e IMAGE_TAG=rdfpub/example                  \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  -v /path/to/your/site/dir:/rdfpub/input:ro
+  -v /path/to/your/site/dir:/rdfpub/input:ro   \
+  ghcr.io/rdfpub/generator
 
 # Run your site
 docker run -p 80:80 rdfpub/example
