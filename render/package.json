@@ -1,0 +1,29 @@
+{
+  "name": "render",
+  "version": "1.0.0",
+  "description": "Handlebars rendering process for rdf.pub",
+  "main": "render.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "bundle": "./node_modules/.bin/esbuild render.js --bundle --platform=node --outfile=render.bundle.js",
+    "minify": "uglifyjs --compress --mangle -o render.min.js -- render.bundle.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rdfpub/generator.git"
+  },
+  "author": "EmptyStar",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rdfpub/generator/issues"
+  },
+  "homepage": "https://github.com/rdfpub/generator#readme",
+  "dependencies": {
+    "handlebars": "^4.7.7",
+    "markdown-it": "^13.0.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.14.43",
+    "uglify-js": "^3.16.0"
+  }
+}
