@@ -27,4 +27,4 @@ find $OUTPUTDIR/resources \( \
   -exec brotli -9fkv {} \;
 
 # Build Docker image of site
-docker buildx build -f /rdfpub/Dockerfile -t $IMAGE_TAG $OUTPUTDIR
+docker buildx build -f /rdfpub/Dockerfile "$@" $OUTPUTDIR
