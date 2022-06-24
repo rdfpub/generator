@@ -24,7 +24,7 @@ docker run                                     \
   -t rdfpub/example
 
 # Run your site
-docker run -p 80:80 rdfpub/example
+docker run -p 80:8081 rdfpub/example
 ```
 
 And that's it! You can access your site locally for testing, then you can deploy your site image to any environment that supports Docker, including AWS, GCP, Heroku, or other popular hosting providers.
