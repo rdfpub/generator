@@ -4,7 +4,7 @@ This process renders resource HTML pages based on the [Handlebars templates](htt
 
 ```sh
 npm install
-node render.js /path/to/layouts/dir /path/to/resources/dir
+node render.js /path/to/layouts/dir /path/to/resources/dir http://example.com/base/uri
 ```
 
 The `layouts` directory and the `resources` directory illustrated in the example code are meant to have been created by the init process. Once the HTML files are rendered, an rdfpub site can be built from the parent output directory via [the site build process](../site-build).
