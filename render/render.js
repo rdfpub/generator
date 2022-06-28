@@ -1,13 +1,16 @@
 const fs = require('fs');
+const url = require('url');
 const Handlebars = require('handlebars');
 const MarkdownIt = require('markdown-it');
 
 // Get processing directories
 const INPUTDIR = process.argv[2];
 const OUTPUTDIR = process.argv[3];
+const BASEURI = process.argv[4];
 
 console.log(`Input directory is ${INPUTDIR}`);
 console.log(`Output directory is ${OUTPUTDIR}`);
+console.log(`Base URI is ${BASEURI}`);
 
 // Convenience function for path appending
 const subpath = (dir, segment) => {
@@ -69,9 +72,24 @@ const helpers = [
     },
   },
   {
+    // Equals operator: {{# if (equals person.name friend.name) }}
+    name: 'equals',
+    fn: (...values) => {
+      return values.slice(0, -1).every((v) => v === values[0]);
+    },
+  },
+  {
     // Markdown: {{{markdown query.description}}}
     name: 'markdown',
     fn: (str) => (str ? md.render(str.toString()) : ''),
+  },
+  {
+    // Relative URL's: <a href="{{relative person.url}}">{{person.name}}</a>
+    name: 'relative',
+    fn: (str) => {
+      const link = new URL(str, BASEURI);
+      return link.pathname + link.search + link.hash;
+    },
   },
 ];
 
@@ -115,16 +133,21 @@ class Resource {
     context.registerHelper(name, fn);
     return context;
   }, Handlebars.create());
+  url;
 
-  constructor(dir, outputdir) {
+  constructor(dir, outputdir, url) {
     this.dir = dir;
     this.outputdir = outputdir;
+    this.url = url;
   }
 
   handleFile = (file) => {
     switch (file.extension) {
       case 'rq':
-        this.queries[file.language] ??= {};
+        this.queries[file.language] ??= {
+          $resource: this.url.href,
+          $language: file.language,
+        };
         this.queries[file.language][file.name] = decorateSPARQLResults(
           JSON.parse(file.read())
         );
@@ -158,7 +181,7 @@ class Resource {
 }
 
 // Initialize resource queue
-const resources = [new Resource(INPUTDIR, OUTPUTDIR)];
+const resources = [new Resource(INPUTDIR, OUTPUTDIR, new URL('/', BASEURI))];
 
 // Iterate over resources
 while (resources.length) {
@@ -171,7 +194,17 @@ while (resources.length) {
     const stat = fs.statSync(path);
     if (stat.isDirectory()) {
       // Capture resource for processing
-      resources.push(new Resource(path, subpath(resource.outputdir, item)));
+      resources.push(
+        new Resource(
+          path,
+          subpath(resource.outputdir, item),
+          new URL(
+            resource.url.href +
+              (resource.url.pathname === '/' ? '' : '/') +
+              item
+          )
+        )
+      );
     } else if (stat.isFile()) {
       resource.handleFile(new File(path));
     } else {

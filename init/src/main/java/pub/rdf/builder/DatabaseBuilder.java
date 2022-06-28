@@ -104,11 +104,11 @@ public class DatabaseBuilder extends ConfigurableBuilder {
         connection.add(rdf.createStatement(rn, SD.NAME, config.getSPARQLEndpoint(), config.getSPARQLEndpoint()));
         connection.add(rdf.createStatement(rn, SD.GRAPH, gn, config.getSPARQLEndpoint()));
         connection.add(rdf.createStatement(gn, RDF.TYPE, SD.GRAPHCLASS, config.getSPARQLEndpoint()));
-        connection.add(rdf.createStatement(gn, VOID.TRIPLES, rdf.createLiteral(connection.size(config.getSPARQLEndpoint())), config.getSPARQLEndpoint()));
         connection.add(rdf.createStatement(rn, DCTerms.CREATED, rdf.createLiteral(new Date()), config.getSPARQLEndpoint()));
 
         connection.add(DATASET, SD.DEFAULTDATASET, dn, config.getSPARQLEndpoint());
         connection.add(dn, RDF.TYPE, SD.GRAPHCLASS, config.getSPARQLEndpoint());
+        connection.add(rdf.createStatement(gn, VOID.TRIPLES, rdf.createLiteral(connection.size(config.getSPARQLEndpoint()) + 2), config.getSPARQLEndpoint()));
         connection.add(dn, VOID.TRIPLES, SimpleValueFactory.getInstance().createLiteral(connection.size() + 1), config.getSPARQLEndpoint());
         connection.commit();
 
@@ -238,7 +238,7 @@ public class DatabaseBuilder extends ConfigurableBuilder {
     @Override
     public Exception handleFinishedResource(final RDFPUBResource resource) {
         // Generate static resource RDF from database
-        if (resource.hasData()) {
+        if (resource.hasData() && !resource.equals(config.getSPARQLEndpoint())) {
             // Initialize local variables
             final ValueFactory rdf = SimpleValueFactory.getInstance();
 

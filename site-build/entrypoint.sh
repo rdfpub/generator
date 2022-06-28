@@ -11,7 +11,7 @@ OUTPUTDIR=$BASEDIR/output
 # Generate site
 mkdir -p output
 java -jar $BASEDIR/init.jar $INPUTDIR $OUTPUTDIR
-node $BASEDIR/render.min.js $OUTPUTDIR/layouts $OUTPUTDIR/resources
+node $BASEDIR/render.min.js $OUTPUTDIR/layouts $OUTPUTDIR/resources "`yq '.BaseURI' $INPUTDIR/.rdfpub`"
 
 # Clean up unneeded layout files
 rm -rf $OUTPUTDIR/layouts
