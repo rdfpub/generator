@@ -88,7 +88,8 @@ public class Main {
             final StringBuilder includestr = new StringBuilder(256);
             for (final String include : config.getIncludeFiles()) {
                 includestr.append("(?:").append(include).append(")|");
-            }includes = Pattern.compile(includestr.deleteCharAt(includestr.length() - 1).toString());
+            }
+            includes = Pattern.compile(includestr.deleteCharAt(includestr.length() - 1).toString());
         } else {
             includes = null;
         }
