@@ -115,7 +115,7 @@ public class DatabaseBuilder extends ConfigurableBuilder {
         // Write out data files for SPARQL endpoint
         final Path sparqldir = config.getOutputDirectory().resolve("resources").resolve("." + URI.create(config.getSPARQLEndpoint().toString()).getPath()).normalize();
         Files.createDirectories(sparqldir);
-        final Exception e = writeRDF(config.getSPARQLEndpoint().toString(),config.getPrefixes());
+        final Exception e = writeRDF(config.getSPARQLEndpoint(),config.getPrefixes());
         if(e != null) {
             throw new IOException("Unable to write RDF files for SPARQL endpoint",e);
         }
@@ -256,27 +256,39 @@ public class DatabaseBuilder extends ConfigurableBuilder {
             connection.commit();
 
             // Write out RDF files for resource
-            return writeRDF(resource.stringValue(), Stream.concat(resource.getPrefixes().entrySet().stream(),config.getPrefixes().entrySet().stream())
+            return writeRDF(resource, Stream.concat(resource.getPrefixes().entrySet().stream(),config.getPrefixes().entrySet().stream())
                 .collect(Collectors.toMap(Map.Entry::getKey,Map.Entry::getValue,(r,g) -> r)));
         }
         return null;
     }
 
-    private Exception writeRDF(final String graph, final Map<String,String> prefixes) {
-        final Path outputPath = config.getOutputDirectory().resolve("resources").resolve("." + URI.create(graph).getPath()).normalize();
+    private Exception writeRDF(final IRI resource, final Map<String,String> prefixes) {
+        final Path outputPath = config.getOutputDirectory().resolve("resources").resolve("." + URI.create(resource.stringValue()).getPath()).normalize();
         final NTriplesWriter nt;
         final TurtleWriter ttl;
         final RDFXMLWriter rdfxml;
         final JSONLDWriter jsonld;
         try {
-            nt = new NTriplesWriter(new FileOutputStream(outputPath.resolve("data.nt").toFile()));
-            ttl = new TurtleWriter(new FileOutputStream(outputPath.resolve("data.ttl").toFile()));
-            rdfxml = new RDFXMLWriter(new FileOutputStream(outputPath.resolve("data.rdf").toFile()));
-            jsonld = new JSONLDWriter(new FileOutputStream(outputPath.resolve("data.jsonld").toFile()));
+            // Create writers
+            nt = new NTriplesWriter(new BufferedOutputStream(new FileOutputStream(outputPath.resolve("data.nt").toFile())));
+            ttl = new TurtleWriter(new BufferedOutputStream(new FileOutputStream(outputPath.resolve("data.ttl").toFile())));
+            rdfxml = new RDFXMLWriter(new BufferedOutputStream(new FileOutputStream(outputPath.resolve("data.rdf").toFile())));
+            jsonld = new JSONLDWriter(new BufferedOutputStream(new FileOutputStream(outputPath.resolve("data.jsonld").toFile())));
+
+            // Configure writers
+            nt.set(BasicWriterSettings.INLINE_BLANK_NODES,true);
+            ttl.set(BasicWriterSettings.INLINE_BLANK_NODES,true);
+            rdfxml.set(BasicWriterSettings.INLINE_BLANK_NODES,true);
+            jsonld.set(BasicWriterSettings.INLINE_BLANK_NODES,true);
+
+            nt.set(BasicWriterSettings.PRETTY_PRINT,true);
+            ttl.set(BasicWriterSettings.PRETTY_PRINT,true);
+            rdfxml.set(BasicWriterSettings.PRETTY_PRINT,true);
+            jsonld.set(BasicWriterSettings.PRETTY_PRINT,true);
         } catch (final FileNotFoundException ex) {
-            return new Exception(String.format("Cannot output serialized resource RDF for <%s> to file", graph), ex);
+            return new Exception(String.format("Cannot output serialized resource RDF for <%s> to file", resource), ex);
         }
-        connection.prepareGraphQuery("CONSTRUCT { $s $p $o } WHERE { GRAPH <" + graph + "> { $s $p $o } }").evaluate(new RDFHandler() {
+        connection.export(new RDFHandler() {
             @Override
             public void startRDF() throws RDFHandlerException {
                 // Initialize writers
@@ -284,12 +296,6 @@ public class DatabaseBuilder extends ConfigurableBuilder {
                 ttl.startRDF();
                 rdfxml.startRDF();
                 jsonld.startRDF();
-
-                // Configure writers
-                nt.getSupportedSettings().add(BasicWriterSettings.INLINE_BLANK_NODES);
-                ttl.getSupportedSettings().add(BasicWriterSettings.INLINE_BLANK_NODES);
-                rdfxml.getSupportedSettings().add(BasicWriterSettings.INLINE_BLANK_NODES);
-                jsonld.getSupportedSettings().add(BasicWriterSettings.INLINE_BLANK_NODES);
 
                 // Feed prefixes into RDF output
                 prefixes.forEach(this::handleNamespace);
@@ -322,7 +328,7 @@ public class DatabaseBuilder extends ConfigurableBuilder {
             public void handleComment(final String comment) throws RDFHandlerException {
                 // noop
             }
-        });
+        },resource);
         return null;
     }
 }

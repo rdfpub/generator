@@ -8,11 +8,18 @@ import pub.rdf.util.Program;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class NginxConfigBuilder extends ConfigurableBuilder {
     private final Path nginxdir;
     private final Path locationsconf;
     private final Path connegconf;
+    private final Pattern compressed;
+    private final Map<String,String> types = new HashMap<>(256);
+    private final StringBuilder rconf = new StringBuilder(4096);
+    private final StringBuilder lconf = new StringBuilder(4096);
     boolean configuredSPARQLEndpoint = false;
 
     private void copyConfigToOutput(final String filename) throws IOException {
@@ -26,6 +33,18 @@ public class NginxConfigBuilder extends ConfigurableBuilder {
         nginxdir = config.getOutputDirectory().resolve("nginx");
         locationsconf = nginxdir.resolve("locations.nginx.conf");
         connegconf = nginxdir.resolve("conneg.nginx.conf");
+
+        // Define regex pattern for compressed files
+        compressed = Pattern.compile(config.getCompressFiles().stream().reduce("",(pattern,regex) -> pattern + "|(?:" + regex + ")").substring(1));
+
+        // Define known/common MIME types
+        Program.readResource("known-mime-types.csv").lines().forEach(line -> {
+            final String[] kv = line.split(",");
+            types.put(kv[0],kv[1]);
+        });
+
+        // Add user-defined MIME types
+        types.putAll(config.getFileTypes());
     }
 
     @Override
@@ -42,7 +61,7 @@ public class NginxConfigBuilder extends ConfigurableBuilder {
         copyConfigToOutput("lang.nginx.conf");
         copyConfigToOutput("resource.nginx.conf");
         copyConfigToOutput("static.nginx.conf");
-        copyConfigToOutput("types.nginx.conf");
+        copyConfigToOutput("static-compressed.nginx.conf");
         copyConfigToOutput("sparql-endpoint.nginx.conf");
     }
 
@@ -54,7 +73,7 @@ public class NginxConfigBuilder extends ConfigurableBuilder {
         // Output SPARQL endpoint configuration if not already configured
         if(!this.configuredSPARQLEndpoint) {
             Program.out("Appending SPARQL endpoint Nginx config");
-            final StringBuilder rconf = new StringBuilder(4096);
+            rconf.setLength(0);
             String sparqlPath = URI.create(config.getSPARQLEndpoint().toString()).getPath();
             final String slash = sparqlPath.charAt(sparqlPath.length() - 1) == '/' ? "" : "/";
             rconf
@@ -65,22 +84,22 @@ public class NginxConfigBuilder extends ConfigurableBuilder {
                 .append("location = ")
                 .append(sparqlPath)
                 .append(slash)
-                .append("data.jsonld { include static.nginx.conf; }\n")
+                .append("data.jsonld { add_header Content-Type \"application/ld+json\"; include static-compressed.nginx.conf; }\n")
 
                 .append("location = ")
                 .append(sparqlPath)
                 .append(slash)
-                .append("data.nt { include static.nginx.conf; }\n")
+                .append("data.nt { add_header Content-Type \"text/ntriples\"; include static-compressed.nginx.conf; }\n")
 
                 .append("location = ")
                 .append(sparqlPath)
                 .append(slash)
-                .append("data.rdf { include static.nginx.conf; }\n")
+                .append("data.rdf { include add_header Content-Type \"application/rdf+xml\"; static-compressed.nginx.conf; }\n")
 
                 .append("location = ")
                 .append(sparqlPath)
                 .append(slash)
-                .append("data.ttl { include static.nginx.conf; }\n")
+                .append("data.ttl { include add_header Content-Type \"text/turtle\"; static-compressed.nginx.conf; }\n")
             ;
 
             try {
@@ -119,7 +138,23 @@ public class NginxConfigBuilder extends ConfigurableBuilder {
                 return null;
             default:
                 try {
-                    Files.writeString(locationsconf,"location = " + (resource.isRootResource() ? "" : resource.getURIPath()) + "/" + file.getFileName() + " { include static.nginx.conf; }\n",StandardOpenOption.APPEND);
+                    final boolean isCompressed = compressed.matcher(file.getPath().toString()).find();
+                    if(isCompressed) {
+                        Program.out("Enabling compression for file %s",file);
+                    }
+                    rconf.setLength(0);
+                    rconf
+                        .append("location = ")
+                        .append(resource.isRootResource() ? "" : resource.getURIPath())
+                        .append("/")
+                        .append(file.getFileName())
+                        .append(" { add_header Content-Type \"")
+                        .append(types.getOrDefault(file.getExtension(),"text/plain"))
+                        .append("\"; include static")
+                        .append(isCompressed ? "-compressed" : "")
+                        .append(".nginx.conf; }\n")
+                    ;
+                    Files.writeString(locationsconf,rconf.toString(),StandardOpenOption.APPEND);
                 } catch (final IOException e) {
                     return new IOException(String.format("Failed to append Nginx config for %s",resource),e);
                 } catch (final Exception e) {
@@ -131,8 +166,12 @@ public class NginxConfigBuilder extends ConfigurableBuilder {
 
     @Override
     public Exception handleFinishedResource(final RDFPUBResource resource) {
-        final StringBuilder rconf = new StringBuilder(4096);
-        final StringBuilder lconf;
+
+        // Reset StringBuilders
+        rconf.setLength(0);
+        lconf.setLength(0);
+
+        // Determine root slash
         final String slash = resource.isRootResource() ? "" : "/";
 
         // SPARQL endpoint is special
@@ -150,30 +189,28 @@ public class NginxConfigBuilder extends ConfigurableBuilder {
                 .append("location = ")
                 .append(resource.getURIPath())
                 .append(slash)
-                .append("data.jsonld { include static.nginx.conf; }\n")
+                .append("data.jsonld { add_header Content-Type \"application/ld+json\"; include static-compressed.nginx.conf; }\n")
 
                 .append("location = ")
                 .append(resource.getURIPath())
                 .append(slash)
-                .append("data.nt { include static.nginx.conf; }\n")
+                .append("data.nt { add_header Content-Type \"text/ntriples\"; include static-compressed.nginx.conf; }\n")
 
                 .append("location = ")
                 .append(resource.getURIPath())
                 .append(slash)
-                .append("data.rdf { include static.nginx.conf; }\n")
+                .append("data.rdf { add_header Content-Type \"application/rdf+xml\"; include static-compressed.nginx.conf; }\n")
 
                 .append("location = ")
                 .append(resource.getURIPath())
                 .append(slash)
-                .append("data.ttl { include static.nginx.conf; }\n")
+                .append("data.ttl { add_header Content-Type \"text/turtle\"; include static-compressed.nginx.conf; }\n")
             ;
         }
 
         // Handle resource index templates
         final boolean hasIndexTemplates = !resource.getIndexTemplates().isEmpty();
         if(hasIndexTemplates) {
-            lconf = new StringBuilder(1024);
-
             // Append resource language config
             lconf
                 .append("  conneg.accept_language.register(\"languages")
@@ -189,7 +226,7 @@ public class NginxConfigBuilder extends ConfigurableBuilder {
                     .append(slash)
                     .append("index@")
                     .append(language)
-                    .append(".html { include static.nginx.conf; }\n")
+                    .append(".html { add_header Content-Type \"text/html\"; include static-compressed.nginx.conf; }\n")
                     .append("location = ")
                     .append(resource.getURIPath())
                     .append('@')
@@ -213,8 +250,6 @@ public class NginxConfigBuilder extends ConfigurableBuilder {
                 .deleteCharAt(lconf.length() - 1)
                 .append("\")\n")
             ;
-        } else {
-            lconf = null; // shouldn't cause NPE
         }
 
         // Write main resource type config if resource has any content

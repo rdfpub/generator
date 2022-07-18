@@ -21,6 +21,8 @@ public final class RDFPUBConfig {
         public Map<String,String> Prefixes = Collections.emptyMap();
         public List<String> ExcludeFiles = Collections.emptyList();
         public List<String> IncludeFiles = Collections.emptyList();
+        public List<String> CompressFiles = Collections.emptyList();
+        public Map<String,String> FileTypes = Collections.emptyMap();
     }
 
     private final Path InputDirectory;
@@ -32,6 +34,8 @@ public final class RDFPUBConfig {
     private final Map<String,String> Prefixes;
     private final List<String> ExcludeFiles;
     private final List<String> IncludeFiles;
+    private final List<String> CompressFiles;
+    private final Map<String,String> FileTypes;
 
     private RDFPUBConfig(
         final Path inputdir,
@@ -41,8 +45,10 @@ public final class RDFPUBConfig {
         final boolean CleanOutputDirectory,
         final IRI SPARQLEndpoint,
         final Map<String,String> Prefixes,
+        final Map<String,String> FileTypes,
         final List<String> IncludeFiles,
-        final List<String> ExcludeFiles
+        final List<String> ExcludeFiles,
+        final List<String> CompressFiles
     ) {
         this.InputDirectory = inputdir;
         this.OutputDirectory = outpudir;
@@ -51,8 +57,17 @@ public final class RDFPUBConfig {
         this.CleanOutputDirectory = CleanOutputDirectory;
         this.SPARQLEndpoint = SPARQLEndpoint;
         this.Prefixes = Prefixes;
+        this.FileTypes = FileTypes;
         this.IncludeFiles = IncludeFiles;
         this.ExcludeFiles = ExcludeFiles;
+        this.CompressFiles = CompressFiles;
+    }
+
+    // Function for shrinking a list down to a compact ArrayList
+    private static List<String> shrinkList(final List<String> list) {
+        final List<String> tempList = new ArrayList<>(list.size());
+        tempList.addAll(list);
+        return tempList;
     }
 
     public static RDFPUBConfig load(final Path inputdir, final Path outputdir)throws IOException {
@@ -64,13 +79,19 @@ public final class RDFPUBConfig {
         // Get base URI
         final URI base = URI.create(configInternal.BaseURI);
 
-        // Copy collections to more efficiently sized collections
-        final Map<String,String> tempPrefixes = new HashMap<>((int) (configInternal.Prefixes.size() / 0.75 + 1));
-        tempPrefixes.putAll(configInternal.Prefixes.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, prefix -> base.resolve(prefix.getValue()).toString())));
-        final List<String> tempExcludeFiles = new ArrayList<>(configInternal.ExcludeFiles.size());
-        tempExcludeFiles.addAll(configInternal.ExcludeFiles);
-        final List<String> tempIncludeFiles = new ArrayList<>(configInternal.IncludeFiles.size());
-        tempIncludeFiles.addAll(configInternal.IncludeFiles);
+        // Compact and resolve URI prefixes
+        Map<String,String> tempPrefixes = configInternal.FileTypes;
+        if(!configInternal.Prefixes.isEmpty()) {
+            tempPrefixes = new HashMap<>((int) (configInternal.Prefixes.size() / 0.75 + 1));
+            tempPrefixes.putAll(configInternal.Prefixes.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, prefix -> base.resolve(prefix.getValue()).toString())));
+        }
+
+        // Compact custom file type definitions
+        Map<String,String> tempFileTypes = configInternal.FileTypes;
+        if(!tempFileTypes.isEmpty()) {
+            tempFileTypes = new HashMap<>((int) (configInternal.FileTypes.size() / 0.75 + 1));
+            tempFileTypes.putAll(configInternal.FileTypes);
+        }
 
         // Return final config
         return new RDFPUBConfig(
@@ -81,8 +102,10 @@ public final class RDFPUBConfig {
             configInternal.CleanOutputDirectory,
             SimpleValueFactory.getInstance().createIRI(base.resolve(configInternal.SPARQLEndpoint).toString()),
             tempPrefixes,
-            tempIncludeFiles,
-            tempExcludeFiles
+            tempFileTypes,
+            shrinkList(configInternal.IncludeFiles),
+            shrinkList(configInternal.ExcludeFiles),
+            shrinkList(configInternal.CompressFiles)
         );
     }
 
@@ -107,6 +130,10 @@ public final class RDFPUBConfig {
     public Map<String, String> getPrefixes() {
         return Prefixes;
     }
+
+    public List<String> getCompressFiles() { return CompressFiles; }
+
+    public Map<String,String> getFileTypes() { return FileTypes; }
 
     public List<String> getExcludeFiles() {
         return ExcludeFiles;
