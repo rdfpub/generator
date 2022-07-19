@@ -62,6 +62,13 @@ mv /rdfpub/db/* $RDF4J_HOME/server/repositories/rdfpub/
 rm -rf /rdfpub/db/
 chown -R $RDF4J_USER:$JETTY_USER $RDF4J_HOME
 chmod ug+w -R $RDF4J_HOME
+chmod a-w \
+  $RDF4J_HOME/server/repositories/rdfpub/config.ttl \
+  $RDF4J_HOME/server/repositories/rdfpub/contexts.dat \
+  $RDF4J_HOME/server/repositories/rdfpub/namespaces.dat \
+  $RDF4J_HOME/server/repositories/rdfpub/nativerdf.ver \
+  $RDF4J_HOME/server/repositories/rdfpub/triples.prop \
+  $RDF4J_HOME/server/repositories/rdfpub/txncache.*
 
 # Install and configure OpenResty
 wget -O- 'https://openresty.org/package/admin@openresty.com-5ea678a6.rsa.pub' > /etc/apk/keys/admin@openresty.com-5ea678a6.rsa.pub
