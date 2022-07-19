@@ -128,7 +128,7 @@ public class Main {
                         out("Directory %s is explicitly excluded from the build",dirstr);
                         return FileVisitResult.SKIP_SUBTREE;
                     } else if (dirstr.contains("/.")) {
-                        out(String.format("Skipping dot directory %s", dir));
+                        out("Skipping dot directory %s", dir);
                         return FileVisitResult.SKIP_SUBTREE;
                     }
 
@@ -154,13 +154,13 @@ public class Main {
                         out("File %s is explicitly excluded from the build",filestr);
                         return FileVisitResult.CONTINUE;
                     } else if (filestr.contains("/.")) {
-                        out(String.format("Skipping dot file %s", file));
+                        out("Skipping dot file %s", file);
                         return FileVisitResult.CONTINUE;
                     }
 
                     // Get relative path within input directory
                     final RDFPUBResource resource = resources.peek();
-                    out(String.format("Current resource is %s",resource));
+                    out("Current resource is %s",resource);
 
                     // Builder processing
                     for(final Builder builder : builders) {

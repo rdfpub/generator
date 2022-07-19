@@ -8,17 +8,19 @@ import java.time.Instant;
 import java.util.Date;
 
 public final class Program {
+    private final static StringBuilder dateStringBuilder = new StringBuilder(32);
     private static void printDate(final PrintStream stream) {
-        stream.print(String.format("[%s] ", Date.from(Instant.now())));
+        dateStringBuilder.setLength(0);
+        stream.print(dateStringBuilder.append('[').append(Instant.now()).append(']').append(' '));
     }
     public static void out(String message, Object... objects) {
         printDate(System.out);
-        System.out.println(String.format(message,objects));
+        System.out.printf(message + "%n",objects);
     }
 
     public static void err(String message, Object... objects) {
         printDate(System.err);
-        System.err.println(String.format(message,objects));
+        System.err.printf(message + "%n",objects);
     }
 
     public static void xerr(final String why, final Exception e) {
