@@ -53,6 +53,7 @@ public class DatabaseBuilder extends ConfigurableBuilder {
     private final Path dbdir;
     private RepositoryConnection connection = null;
     private final Set<Namespace> namespaces = new HashSet<>(16);
+    private final StringBuilder prefixStringBuilder = new StringBuilder(512);
 
     public DatabaseBuilder(final RDFPUBConfig config) {
         super(config);
@@ -171,12 +172,20 @@ public class DatabaseBuilder extends ConfigurableBuilder {
                     ;
 
                     // Create set of global prefixes with existing query prefixes removed
+                    prefixStringBuilder.setLength(0);
                     final String globalPrefixes = config
                         .getPrefixes()
                         .entrySet()
                         .stream()
                         .filter(prefix -> !queryPrefixes.contains(prefix.getKey()))
-                        .reduce("",(str, prefix) -> str + "PREFIX " + prefix.getKey() + ": <" + prefix.getValue() + ">\n",(a,b) -> a + b)
+                        .reduce(prefixStringBuilder,(sb, prefix) ->
+                            sb.append("PREFIX ")
+                            .append(prefix.getKey())
+                            .append(": <")
+                            .append(prefix.getValue())
+                            .append(">\n"),
+                        StringBuilder::append)
+                        .toString()
                     ;
 
                     // Prepare query with prepended with undefined prefixes

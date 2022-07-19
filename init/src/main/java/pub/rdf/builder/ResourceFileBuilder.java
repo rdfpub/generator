@@ -37,11 +37,11 @@ public class ResourceFileBuilder extends ConfigurableBuilder {
         // Do template processing
         for(final RDFPUBResource resource : layouts) {
             if(resource.getIndexTemplates().isEmpty()) {
-                out(String.format("No index templates for %s",resource));
+                out("No index templates for %s",resource);
                 continue;
             }
 
-            out(String.format("Processing layout for %s",resource));
+            out("Processing layout for %s",resource);
             for(final ResourceFile index : resource.getIndexTemplates()) {
                 // Copy file to output location
                 Files.copy(index.getPath(),resource.getLayoutPath().resolve(index.getFileName()));
@@ -49,7 +49,7 @@ public class ResourceFileBuilder extends ConfigurableBuilder {
                 // Execute queries for this index file
                 final String language = index.getLanguage();
                 for (final Map.Entry<String, TupleQuery> query : resource.getQueries().entrySet()) {
-                    out(String.format("Executing query %s", query.getKey()));
+                    out("Executing query %s", query.getKey());
                     query.getValue().setBinding("resource", resource);
                     query.getValue().setBinding("language", SimpleValueFactory.getInstance().createLiteral(language));
                     query.getValue().evaluate(new SPARQLResultsJSONWriter(new FileOutputStream(resource.getLayoutPath().resolve(String.format("%s@%s.rq", query.getKey(),language)).toFile())));
@@ -57,7 +57,7 @@ public class ResourceFileBuilder extends ConfigurableBuilder {
             }
 
             for(final Map.Entry<String, ResourceFile> partialTemplate : resource.getPartialTemplates().entrySet()) {
-                out(String.format("Copying partial template %s",partialTemplate.getKey()));
+                out("Copying partial template %s",partialTemplate.getKey());
                 Files.copy(partialTemplate.getValue().getPath(),resource.getLayoutPath().resolve(String.format("%s.handlebars",partialTemplate.getKey())));
             }
         }
@@ -140,7 +140,7 @@ public class ResourceFileBuilder extends ConfigurableBuilder {
                 if (child.equals(resource)) {
                     break;
                 } else {
-                    out(String.format("Propagating to child %s", child));
+                    out("Propagating to child %s", child);
 
                     // Propagate queries
                     for (final Map.Entry<String, TupleQuery> query : resource.getQueries().entrySet()) {
