@@ -87,7 +87,7 @@ mkdir -p /etc/runit
 mkdir -p $JETTY_SERVICE
 cat <<JETTYRUN > $JETTY_SERVICE/run
 #!/bin/sh
-exec chpst -u $JETTY_USER java -Dorg.eclipse.rdf4j.appdata.basedir=$RDF4J_HOME -jar $JETTY_HOME/jetty-runner.jar $JETTY_HOME/rdf4j-server.war 1>/proc/1/fd/1 2>/proc/1/fd/2
+exec chpst -u $JETTY_USER java -Dorg.eclipse.rdf4j.appdata.basedir=$RDF4J_HOME -jar $JETTY_HOME/jetty-runner.jar --host 127.0.0.1 $JETTY_HOME/rdf4j-server.war 1>/proc/1/fd/1 2>/proc/1/fd/2
 JETTYRUN
 
 # Add OpenResty runit service
