@@ -1,5 +1,6 @@
 package pub.rdf.builder;
 
+import org.eclipse.rdf4j.common.transaction.IsolationLevels;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -72,7 +73,7 @@ public class DatabaseBuilder extends ConfigurableBuilder {
         connection = database.getConnection();
 
         // Initial data
-        connection.begin();
+        connection.begin(IsolationLevels.NONE);
 
         // Define namespaces
         connection.clearNamespaces();
@@ -95,7 +96,7 @@ public class DatabaseBuilder extends ConfigurableBuilder {
         // Finalize the SPARQL service description
         final ValueFactory rdf = SimpleValueFactory.getInstance();
         final BNode dn = rdf.createBNode();
-        connection.begin();
+        connection.begin(IsolationLevels.NONE);
 
         // Add SPARQL endpoint metadata
         final BNode rn = rdf.createBNode();
@@ -231,7 +232,7 @@ public class DatabaseBuilder extends ConfigurableBuilder {
 
             // Commit data
             try {
-                connection.begin();
+                connection.begin(IsolationLevels.NONE);
                 parser.parse(new FileInputStream(file.getPath().toFile()), resource.toString());
                 connection.commit();
                 resource.hasData(true);
@@ -254,7 +255,7 @@ public class DatabaseBuilder extends ConfigurableBuilder {
             // Add resource metadata
             final BNode rn = rdf.createBNode();
             final BNode gn = rdf.createBNode();
-            connection.begin();
+            connection.begin(IsolationLevels.NONE);
             connection.add(rdf.createStatement(DATASET, SD.NAMEDGRAPH, rn, config.getSPARQLEndpoint()));
             connection.add(rdf.createStatement(rn, RDF.TYPE, SD.NAMEDGRAPHCLASS, config.getSPARQLEndpoint()));
             connection.add(rdf.createStatement(rn, SD.NAME, resource, config.getSPARQLEndpoint()));
