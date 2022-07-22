@@ -1,5 +1,6 @@
 package pub.rdf.builder;
 
+import org.eclipse.rdf4j.common.transaction.IsolationLevels;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -53,6 +54,7 @@ public class DatabaseBuilder extends ConfigurableBuilder {
     private final Path dbdir;
     private RepositoryConnection connection = null;
     private final Set<Namespace> namespaces = new HashSet<>(16);
+    private final StringBuilder prefixStringBuilder = new StringBuilder(512);
 
     public DatabaseBuilder(final RDFPUBConfig config) {
         super(config);
@@ -71,7 +73,7 @@ public class DatabaseBuilder extends ConfigurableBuilder {
         connection = database.getConnection();
 
         // Initial data
-        connection.begin();
+        connection.begin(IsolationLevels.NONE);
 
         // Define namespaces
         connection.clearNamespaces();
@@ -94,7 +96,7 @@ public class DatabaseBuilder extends ConfigurableBuilder {
         // Finalize the SPARQL service description
         final ValueFactory rdf = SimpleValueFactory.getInstance();
         final BNode dn = rdf.createBNode();
-        connection.begin();
+        connection.begin(IsolationLevels.NONE);
 
         // Add SPARQL endpoint metadata
         final BNode rn = rdf.createBNode();
@@ -171,12 +173,20 @@ public class DatabaseBuilder extends ConfigurableBuilder {
                     ;
 
                     // Create set of global prefixes with existing query prefixes removed
+                    prefixStringBuilder.setLength(0);
                     final String globalPrefixes = config
                         .getPrefixes()
                         .entrySet()
                         .stream()
                         .filter(prefix -> !queryPrefixes.contains(prefix.getKey()))
-                        .reduce("",(str, prefix) -> str + "PREFIX " + prefix.getKey() + ": <" + prefix.getValue() + ">\n",(a,b) -> a + b)
+                        .reduce(prefixStringBuilder,(sb, prefix) ->
+                            sb.append("PREFIX ")
+                            .append(prefix.getKey())
+                            .append(": <")
+                            .append(prefix.getValue())
+                            .append(">\n"),
+                        StringBuilder::append)
+                        .toString()
                     ;
 
                     // Prepare query with prepended with undefined prefixes
@@ -222,7 +232,7 @@ public class DatabaseBuilder extends ConfigurableBuilder {
 
             // Commit data
             try {
-                connection.begin();
+                connection.begin(IsolationLevels.NONE);
                 parser.parse(new FileInputStream(file.getPath().toFile()), resource.toString());
                 connection.commit();
                 resource.hasData(true);
@@ -245,7 +255,7 @@ public class DatabaseBuilder extends ConfigurableBuilder {
             // Add resource metadata
             final BNode rn = rdf.createBNode();
             final BNode gn = rdf.createBNode();
-            connection.begin();
+            connection.begin(IsolationLevels.NONE);
             connection.add(rdf.createStatement(DATASET, SD.NAMEDGRAPH, rn, config.getSPARQLEndpoint()));
             connection.add(rdf.createStatement(rn, RDF.TYPE, SD.NAMEDGRAPHCLASS, config.getSPARQLEndpoint()));
             connection.add(rdf.createStatement(rn, SD.NAME, resource, config.getSPARQLEndpoint()));

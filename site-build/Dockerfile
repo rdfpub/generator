@@ -62,6 +62,13 @@ mv /rdfpub/db/* $RDF4J_HOME/server/repositories/rdfpub/
 rm -rf /rdfpub/db/
 chown -R $RDF4J_USER:$JETTY_USER $RDF4J_HOME
 chmod ug+w -R $RDF4J_HOME
+chmod a-w \
+  $RDF4J_HOME/server/repositories/rdfpub/config.ttl \
+  $RDF4J_HOME/server/repositories/rdfpub/contexts.dat \
+  $RDF4J_HOME/server/repositories/rdfpub/namespaces.dat \
+  $RDF4J_HOME/server/repositories/rdfpub/nativerdf.ver \
+  $RDF4J_HOME/server/repositories/rdfpub/triples.prop \
+  $RDF4J_HOME/server/repositories/rdfpub/txncache.*
 
 # Install and configure OpenResty
 wget -O- 'https://openresty.org/package/admin@openresty.com-5ea678a6.rsa.pub' > /etc/apk/keys/admin@openresty.com-5ea678a6.rsa.pub
@@ -80,7 +87,7 @@ mkdir -p /etc/runit
 mkdir -p $JETTY_SERVICE
 cat <<JETTYRUN > $JETTY_SERVICE/run
 #!/bin/sh
-exec chpst -u $JETTY_USER java -Dorg.eclipse.rdf4j.appdata.basedir=$RDF4J_HOME -jar $JETTY_HOME/jetty-runner.jar $JETTY_HOME/rdf4j-server.war 1>/proc/1/fd/1 2>/proc/1/fd/2
+exec chpst -u $JETTY_USER java -Dorg.eclipse.rdf4j.appdata.basedir=$RDF4J_HOME -jar $JETTY_HOME/jetty-runner.jar --host 127.0.0.1 $JETTY_HOME/rdf4j-server.war 1>/proc/1/fd/1 2>/proc/1/fd/2
 JETTYRUN
 
 # Add OpenResty runit service
