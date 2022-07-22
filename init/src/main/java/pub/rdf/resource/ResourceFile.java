@@ -57,7 +57,7 @@ public class ResourceFile {
     }
 
     public boolean isTemplate() {
-        return "handlebars".equals(extension) || "hbs".equals(extension);
+        return "md".equals(extension) || "html".equals(extension);
     }
 
     public boolean isIndexTemplate() {
