@@ -152,10 +152,11 @@ class Resource {
           JSON.parse(file.read())
         );
         break;
-      case 'handlebars':
-      case 'hbs':
+      case 'md':
+      case 'html':
         if (file.name === 'index') {
-          this.indexes[file.language] = file.read();
+          const template = this.hbs.compile(file.read());
+          this.indexes[file.language] = file.extension === 'md' ? data => md.render(template(data)) : template;
         } else {
           this.hbs.registerPartial(file.name, file.read());
         }
@@ -174,7 +175,7 @@ class Resource {
       );
       fs.writeFileSync(
         `${this.outputdir}/index@${language}.html`,
-        this.hbs.compile(index)(this.queries[language])
+        index(this.queries[language])
       );
     });
   };

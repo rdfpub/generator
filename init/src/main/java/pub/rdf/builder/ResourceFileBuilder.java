@@ -58,7 +58,7 @@ public class ResourceFileBuilder extends ConfigurableBuilder {
 
             for(final Map.Entry<String, ResourceFile> partialTemplate : resource.getPartialTemplates().entrySet()) {
                 out("Copying partial template %s",partialTemplate.getKey());
-                Files.copy(partialTemplate.getValue().getPath(),resource.getLayoutPath().resolve(String.format("%s.handlebars",partialTemplate.getKey())));
+                Files.copy(partialTemplate.getValue().getPath(),resource.getLayoutPath().resolve(partialTemplate.getKey() + ".html"));
             }
         }
     }
@@ -108,8 +108,8 @@ public class ResourceFileBuilder extends ConfigurableBuilder {
             case "sparql":
                 // reserved for other builders
                 return null;
-            case "handlebars":
-            case "hbs":
+            case "html":
+            case "md":
                 if(file.isIndexTemplate()) {
                     if(file.getLanguage() == null) {
                         file.setLanguage(config.getDefaultLanguage());
